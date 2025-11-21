@@ -14,12 +14,14 @@ const ai_module_1 = require("./ai/ai.module");
 const search_module_1 = require("./search/search.module");
 const upload_module_1 = require("./upload/upload.module");
 const prisma_module_1 = require("./prisma/prisma.module");
+const books_module_1 = require("./books/books.module");
+const vocabulary_module_1 = require("./vocabulary/vocabulary.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [ai_module_1.AiModule, search_module_1.SearchModule, upload_module_1.UploadModule, prisma_module_1.PrismaModule],
+        imports: [ai_module_1.AiModule, search_module_1.SearchModule, upload_module_1.UploadModule, prisma_module_1.PrismaModule, books_module_1.BooksModule, vocabulary_module_1.VocabularyModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })
