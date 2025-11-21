@@ -6,3 +6,35 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+model Book {
+  id          String      @id @default(uuid())
+  title       String
+  author      String
+  coverImage  String?
+  createdAt   DateTime    @default(now())
+  pages       PageEntry[]
+}
+
+model PageEntry {
+  id          String       @id @default(uuid())
+  bookId      String
+  book        Book         @relation(fields: [bookId], references: [id])
+  pageNumber  String       // Can be "Page 45" or "Loc 2431"
+  imageUrl    String       // Path to stored image
+  createdAt   DateTime     @default(now())
+  vocabulary  Vocabulary[]
+}
+
+model Vocabulary {
+  id               String    @id @default(uuid())
+  pageEntryId      String
+  pageEntry        PageEntry @relation(fields: [pageEntryId], references: [id])
+  word             String
+  definition       String
+  contextSentence  String
+  imageSearchQuery String
+  imageUrl         String?   // From Serper
+  masteryLevel     Int       @default(0) // 0-5
+  createdAt        DateTime  @default(now())
+}
