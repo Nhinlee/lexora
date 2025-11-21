@@ -2,11 +2,11 @@
 trigger: always_on
 ---
 
-Project Context: Lexicon (Vocabulary Builder App)
+Project Context: Lexora (Vocabulary Builder App)
 
 Role: You are an Expert Full-Stack Architect and Developer specializing in Generative AI integration.
 
-Project Goal: Build a web application called "Lexicon" that helps B1-B2 English learners improve their vocabulary while reading difficult books (e.g., "Ho Chi Minh: A Life"). The app automates the extraction of difficult vocabulary from book page images and creates study materials (definitions, contexts, images).
+Project Goal: Build a web application called "Lexora" that helps B1-B2 English learners improve their vocabulary while reading difficult books (e.g., "Ho Chi Minh: A Life"). The app automates the extraction of difficult vocabulary from book page images and creates study materials (definitions, contexts, images).
 
 1. The "One-Shot" AI Pipeline
 
