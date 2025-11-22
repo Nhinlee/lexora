@@ -93,6 +93,8 @@ Return a JSON object with this exact structure:
 
       const vocabulary = JSON.parse(jsonMatch[0]);
 
+      const pageIndex = vocabulary[0].page_index;
+
       // Validate structure with Zod
       const VocabularySchema = z.array(z.object({
         word: z.string(),
@@ -103,7 +105,7 @@ Return a JSON object with this exact structure:
       }));
 
       return {
-        pageIndex: "Page 1", // Placeholder, would need more complex logic to extract page number
+        pageIndex,
         vocabulary: VocabularySchema.parse(vocabulary),
       };
     } catch (error) {

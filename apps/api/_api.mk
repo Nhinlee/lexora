@@ -9,6 +9,9 @@ api-dev:
 api-build:
 	cd api && pnpm build
 
+api-stop:
+	cd api && pnpm stop
+
 api-db-up:
 	cd api && docker-compose up -d
 
