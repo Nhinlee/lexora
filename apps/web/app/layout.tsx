@@ -32,7 +32,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Sidebar />
-          <main className="pl-64 min-h-screen">
+          <main className="pt-16 md:pt-0 md:pl-64 min-h-screen">
             {children}
           </main>
         </ThemeProvider>
