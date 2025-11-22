@@ -17,3 +17,6 @@ api-db-down:
 
 api-db-migrate:
 	cd api && pnpm prisma migrate dev --name init_postgres
+
+api-db-reset:
+	cd api && pnpm prisma migrate reset

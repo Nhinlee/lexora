@@ -19,16 +19,24 @@ export class AiService {
     });
   }
 
-  async extractVocabulary(imageBuffer: Buffer): Promise<any[]> {
+  async extractVocabulary(imageBuffer: Buffer): Promise<any> {
     const prompt = `Analyze the attached image of a book page.
 OCR the text.
-Identify 5-10 vocabulary words suitable for a B1-level English learner (ignore common A1/A2 words).
-For each word, return a JSON object with:
-word: The vocabulary word.
-definition: A simple, clear definition fitting the context.
-context: The exact sentence from the text where the word appears.
-image_query: A short, descriptive 3-4 word search query to find a visual representation of this word (e.g., 'dictator speaking podium' for 'demagogue').
-Return ONLY a JSON array.`;
+1. Identify the "page index" or location indicator. This often includes "time left" (e.g., "42 hrs 40 mins left in book") AND/OR a percentage (e.g., "15%"). Capture BOTH if present, separated by " | " (e.g., "42 hrs 40 mins left in book | 15%"). If only one is found, return that. If neither, use "Unknown Location".
+2. Identify 5-10 vocabulary words suitable for a B1-level English learner (ignore common A1/A2 words).
+
+Return a JSON object with this exact structure:
+{
+  "page_index": "The extracted location string",
+  "vocabulary": [
+    {
+      "word": "The vocabulary word",
+      "definition": "A simple, clear definition fitting the context",
+      "context": "The exact sentence from the text where the word appears",
+      "image_query": "A short, descriptive 3-4 word search query"
+    }
+  ]
+}`;
 
     const payload = {
       anthropic_version: 'bedrock-2023-05-31',
@@ -67,11 +75,11 @@ Return ONLY a JSON array.`;
       const content = responseBody.content[0].text;
       
       // Extract JSON from the response (in case there's extra text)
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      throw new Error('No JSON array found in response');
+      throw new Error('No JSON object found in response');
     } catch (error) {
       this.logger.error('Error invoking Bedrock model', error);
       throw error;

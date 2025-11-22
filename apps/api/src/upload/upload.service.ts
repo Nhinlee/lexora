@@ -31,21 +31,21 @@ export class UploadService {
       });
     }
 
-    // 2. Save PageEntry (temporarily without image URL or upload to S3/local)
-    // For this MVP, we'll just store a placeholder or base64 if needed, 
-    // but better to just store the filename if we were saving to disk.
-    // Here we just create the entry.
+    // 3. AI Extraction
+    const aiResult = await this.aiService.extractVocabulary(file.buffer);
+    const pageIndex = aiResult.page_index || 'Unknown Location';
+    const vocabularyData = aiResult.vocabulary || [];
+
+    this.logger.log(`Extracted location: ${pageIndex}, words: ${vocabularyData.length}`);
+
+    // 2. Save PageEntry
     const pageEntry = await this.prisma.pageEntry.create({
       data: {
         bookId: book.id,
-        pageNumber: 'Page ' + Date.now(), // Placeholder
-        imageUrl: 'placeholder_url', // We are not implementing S3 upload yet
+        pageNumber: pageIndex,
+        imageUrl: 'placeholder_url',
       },
     });
-
-    // 3. AI Extraction
-    const vocabularyData = await this.aiService.extractVocabulary(file.buffer);
-    this.logger.log(`Extracted ${vocabularyData.length} words`);
 
     // 4. Process each word
     const results: any[] = [];
