@@ -4,33 +4,22 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import UploadZone from "../../components/UploadZone";
 import VocabularyCard from "../../components/VocabularyCard";
-import { ArrowLeft, Book, Loader2, Search } from "lucide-react";
 import Link from "next/link";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-interface Vocabulary {
-    id: string;
-    word: string;
-    definition: string;
-    contextSentence: string;
-    imageUrl?: string;
-    masteryLevel: number;
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
 }
+import { ArrowLeft, ArrowRight, Book, Loader2, Search, X } from "lucide-react";
 
-interface BookData {
-    id: string;
-    title: string;
-    author: string;
-    pages: {
-        id: string;
-        pageNumber: string;
-        vocabulary: Vocabulary[];
-    }[];
-}
+// ... (interfaces)
 
 export default function BookView() {
     const params = useParams();
     const [book, setBook] = useState<BookData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
     const fetchBook = async () => {
         try {
@@ -162,6 +151,96 @@ export default function BookView() {
                             </div>
                         </div>
                     ))}
+                </div>
+                {/* Floating Mobile Navigation */}
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden w-full max-w-[90%] flex justify-center pointer-events-none">
+                    <div className={cn(
+                        "flex items-center bg-slate-900/90 backdrop-blur-lg border border-slate-800 rounded-full shadow-2xl transition-all duration-300 ease-in-out overflow-hidden pointer-events-auto",
+                        isMobileSearchOpen ? "w-full p-2" : "w-fit p-2 space-x-2"
+                    )}>
+                        {isMobileSearchOpen ? (
+                            <div className="flex items-center w-full animate-in fade-in zoom-in duration-300">
+                                <Search className="w-5 h-5 text-slate-400 ml-3 mr-2 flex-shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Search pages..."
+                                    autoFocus
+                                    className="flex-1 bg-transparent border-none outline-none text-white placeholder-slate-500 h-10 min-w-0"
+                                    onChange={(e) => {
+                                        const query = e.target.value.toLowerCase();
+                                        const queryDigits = query.replace(/\D/g, '');
+
+                                        const pages = document.querySelectorAll('[data-page-id]');
+                                        pages.forEach((page) => {
+                                            const pageNum = page.getAttribute('data-page-num')?.toLowerCase() || '';
+                                            const pageDigits = pageNum.replace(/\D/g, '');
+                                            const isMatch = pageNum.includes(query) ||
+                                                (queryDigits.length > 0 && pageDigits.includes(queryDigits));
+                                            (page as HTMLElement).style.display = isMatch ? 'block' : 'none';
+                                        });
+                                    }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        setIsMobileSearchOpen(false);
+                                        // Reset search
+                                        const pages = document.querySelectorAll('[data-page-id]');
+                                        pages.forEach((page) => (page as HTMLElement).style.display = 'block');
+                                    }}
+                                    className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors ml-2 flex-shrink-0"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        const pages = Array.from(document.querySelectorAll('[data-page-id]'));
+                                        const currentScroll = window.scrollY + 100;
+                                        const currentIndex = pages.findIndex(p => (p as HTMLElement).offsetTop > currentScroll);
+                                        const prevIndex = currentIndex === -1 ? pages.length - 2 : currentIndex - 1;
+
+                                        if (prevIndex >= 0) {
+                                            pages[prevIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                    }}
+                                    className="p-3 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+
+                                <div className="w-px h-6 bg-slate-800" />
+
+                                <button
+                                    onClick={() => setIsMobileSearchOpen(true)}
+                                    className="flex items-center space-x-2 px-4 py-2 rounded-full bg-indigo-600 text-white font-medium shadow-lg shadow-indigo-500/20"
+                                >
+                                    <Search className="w-4 h-4" />
+                                    <span className="text-sm">Search</span>
+                                </button>
+
+                                <div className="w-px h-6 bg-slate-800" />
+
+                                <button
+                                    onClick={() => {
+                                        const pages = Array.from(document.querySelectorAll('[data-page-id]'));
+                                        const currentScroll = window.scrollY + 100;
+                                        const nextIndex = pages.findIndex(p => (p as HTMLElement).offsetTop > currentScroll);
+
+                                        if (nextIndex !== -1) {
+                                            pages[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        } else if (pages.length > 0 && window.scrollY < (pages[0] as HTMLElement).offsetTop) {
+                                            pages[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                    }}
+                                    className="p-3 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <ArrowRight className="w-5 h-5" />
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
