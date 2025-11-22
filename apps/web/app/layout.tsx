@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 import Sidebar from "./components/Sidebar";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 export default function RootLayout({
   children,
@@ -20,14 +21,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${outfit.variable} antialiased bg-slate-950 text-slate-50`}
+        className={`${outfit.variable} antialiased bg-background text-foreground`}
       >
-        <Sidebar />
-        <main className="pl-64 min-h-screen">
-          {children}
-        </main>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Sidebar />
+          <main className="pl-64 min-h-screen">
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );

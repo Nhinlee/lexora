@@ -71,12 +71,12 @@ export default function BooksPage() {
         <div className="p-8 max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">My Books</h1>
-                    <p className="text-slate-400">Manage your reading collection</p>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">My Books</h1>
+                    <p className="text-muted-foreground">Manage your reading collection</p>
                 </div>
                 <button
                     onClick={() => setIsCreating(true)}
-                    className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-colors"
+                    className="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg transition-colors"
                 >
                     <Plus className="w-5 h-5" />
                     <span>Add Book</span>
@@ -85,31 +85,31 @@ export default function BooksPage() {
 
             {isCreating && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4">Add New Book</h2>
+                    <div className="bg-card border border-border p-6 rounded-2xl w-full max-w-md shadow-2xl">
+                        <h2 className="text-xl font-bold text-foreground mb-4">Add New Book</h2>
                         <form onSubmit={handleCreateBook} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Title
                                 </label>
                                 <input
                                     type="text"
                                     value={newBookTitle}
                                     onChange={(e) => setNewBookTitle(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+                                    className="w-full bg-secondary border border-input rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
                                     placeholder="e.g., The Great Gatsby"
                                     autoFocus
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Author
                                 </label>
                                 <input
                                     type="text"
                                     value={newBookAuthor}
                                     onChange={(e) => setNewBookAuthor(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+                                    className="w-full bg-secondary border border-input rounded-lg px-4 py-2 text-foreground focus:outline-none focus:border-primary"
                                     placeholder="e.g., F. Scott Fitzgerald"
                                 />
                             </div>
@@ -117,13 +117,13 @@ export default function BooksPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsCreating(false)}
-                                    className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                    className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-colors"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg transition-colors"
                                 >
                                     Create Book
                                 </button>
@@ -138,20 +138,20 @@ export default function BooksPage() {
                     <Link
                         key={book.id}
                         href={`/book/${book.id}`}
-                        className="group block bg-slate-900/50 border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-slate-800/50 transition-all"
+                        className="group block bg-card border border-border rounded-2xl p-6 hover:border-primary/50 hover:bg-accent/50 transition-all"
                     >
                         <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 bg-indigo-500/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
-                                <Book className="w-8 h-8 text-indigo-400" />
+                            <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                                <Book className="w-8 h-8 text-primary" />
                             </div>
-                            <span className="text-xs font-medium text-slate-500 bg-slate-800 px-2 py-1 rounded-full">
+                            <span className="text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-full">
                                 {book._count.pages} pages
                             </span>
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-1 group-hover:text-indigo-300 transition-colors">
+                        <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
                             {book.title}
                         </h3>
-                        <p className="text-slate-400 text-sm">{book.author}</p>
+                        <p className="text-muted-foreground text-sm">{book.author}</p>
                     </Link>
                 ))}
             </div>

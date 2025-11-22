@@ -66,11 +66,11 @@ export default function ReviewView() {
     const currentCard = vocabulary[currentIndex];
 
     return (
-        <div className="min-h-screen bg-slate-950 p-8 flex flex-col">
+        <div className="min-h-screen bg-background p-8 flex flex-col">
             <header className="flex items-center justify-center max-w-4xl mx-auto w-full mb-12">
                 <div className="flex items-center space-x-2">
-                    <Layers className="w-5 h-5 text-indigo-400" />
-                    <span className="text-white font-medium">
+                    <Layers className="w-5 h-5 text-primary" />
+                    <span className="text-foreground font-medium">
                         Card {currentIndex + 1} / {vocabulary.length}
                     </span>
                 </div>
@@ -89,13 +89,13 @@ export default function ReviewView() {
                 <div className="flex items-center space-x-4 w-full">
                     <button
                         onClick={handlePrev}
-                        className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors font-medium"
+                        className="flex-1 py-3 rounded-xl bg-secondary text-secondary-foreground hover:bg-accent transition-colors font-medium"
                     >
                         Previous
                     </button>
                     <button
                         onClick={handleNext}
-                        className="flex-1 py-3 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium shadow-lg shadow-indigo-500/20"
+                        className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20"
                     >
                         Next Card
                     </button>

@@ -100,10 +100,10 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                 className={cn(
                     "relative group cursor-pointer transition-all duration-300 ease-in-out",
                     "border-2 border-dashed rounded-3xl p-12 text-center",
-                    "bg-slate-900/50 backdrop-blur-sm",
+                    "bg-card/50 backdrop-blur-sm",
                     isDragging
-                        ? "border-indigo-500 bg-indigo-500/10 scale-[1.02]"
-                        : "border-slate-700 hover:border-indigo-400/50 hover:bg-slate-800/50",
+                        ? "border-primary bg-primary/10 scale-[1.02]"
+                        : "border-border hover:border-primary/50 hover:bg-card",
                     isUploading && "pointer-events-none opacity-80"
                 )}
             >
@@ -118,23 +118,23 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                 <div className="flex flex-col items-center justify-center space-y-6">
                     <div className={cn(
                         "p-6 rounded-full transition-colors duration-300",
-                        isDragging ? "bg-indigo-500/20" : "bg-slate-800 group-hover:bg-slate-700"
+                        isDragging ? "bg-primary/20" : "bg-secondary group-hover:bg-secondary/80"
                     )}>
                         {isUploading ? (
-                            <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
+                            <Loader2 className="w-10 h-10 text-primary animate-spin" />
                         ) : (
                             <Upload className={cn(
                                 "w-10 h-10 transition-colors duration-300",
-                                isDragging ? "text-indigo-400" : "text-slate-400 group-hover:text-indigo-400"
+                                isDragging ? "text-primary" : "text-muted-foreground group-hover:text-primary"
                             )} />
                         )}
                     </div>
 
                     <div className="space-y-2">
-                        <h3 className="text-xl font-semibold text-slate-200">
+                        <h3 className="text-xl font-semibold text-foreground">
                             {isUploading ? "Processing Page..." : "Upload Book Page"}
                         </h3>
-                        <p className="text-slate-400 max-w-xs mx-auto">
+                        <p className="text-muted-foreground max-w-xs mx-auto">
                             {isUploading
                                 ? "AI is analyzing text and finding vocabulary..."
                                 : "Drag & drop or click to upload a photo of your book page"}
@@ -142,7 +142,7 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                     </div>
 
                     {error && (
-                        <div className="flex items-center space-x-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-lg">
+                        <div className="flex items-center space-x-2 text-destructive bg-destructive/10 px-4 py-2 rounded-lg">
                             <AlertCircle className="w-4 h-4" />
                             <span className="text-sm">{error}</span>
                         </div>
