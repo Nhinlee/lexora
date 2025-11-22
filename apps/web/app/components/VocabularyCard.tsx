@@ -12,6 +12,7 @@ interface VocabularyCardProps {
     word: string;
     definition: string;
     context: string;
+    vnTranslation?: string | null;
     imageUrl?: string | null;
     masteryLevel?: number;
 }
@@ -20,6 +21,7 @@ export default function VocabularyCard({
     word,
     definition,
     context,
+    vnTranslation,
     imageUrl,
     masteryLevel = 0,
 }: VocabularyCardProps) {
@@ -47,6 +49,11 @@ export default function VocabularyCard({
                 <h3 className="text-3xl font-bold text-foreground tracking-tight">
                     {word}
                 </h3>
+                {vnTranslation && (
+                    <p className="text-lg text-muted-foreground font-medium mt-1">
+                        {vnTranslation}
+                    </p>
+                )}
             </div>
 
             {/* Scrollable Content */}

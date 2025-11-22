@@ -34,7 +34,8 @@ model Vocabulary {
   word             String
   definition       String
   contextSentence  String
-  imageSearchQuery String
+  vnTranslation    String?
+  imageQuery       String?
   imageUrl         String?   // From Serper
   masteryLevel     Int       @default(0) // 0-5
   createdAt        DateTime  @default(now())

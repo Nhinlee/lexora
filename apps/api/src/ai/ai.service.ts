@@ -3,6 +3,7 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
+import { z } from 'zod';
 
 @Injectable()
 export class AiService {
@@ -23,7 +24,7 @@ export class AiService {
     const prompt = `Analyze the attached image of a book page.
 OCR the text.
 1. Identify the "page index" or location indicator. This often includes "time left" (e.g., "42 hrs 40 mins left in book") AND/OR a percentage (e.g., "15%"). Capture BOTH if present, separated by " | " (e.g., "42 hrs 40 mins left in book | 15%"). If only one is found, return that. If neither, use "Unknown Location".
-2. Identify 5-10 vocabulary words suitable for a B1-level English learner (ignore common A1/A2 words).
+2. Identify 5-10 vocabulary words suitable for a >= B1 level English learner (ignore common A1/A2 words).
 
 Return a JSON object with this exact structure:
 {
@@ -33,53 +34,78 @@ Return a JSON object with this exact structure:
       "word": "The vocabulary word",
       "definition": "A simple, clear definition fitting the context",
       "context": "The exact sentence from the text where the word appears",
-      "image_query": "A short, descriptive 3-4 word search query"
+      "image_query": "A short, descriptive 3-10 word search query that matches the context of the current book page"
+      "vn_translation": "A simple Vietnamese translation for the word",
     }
   ]
 }`;
 
-    const payload = {
-      anthropic_version: 'bedrock-2023-05-31',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/jpeg', // Assuming JPEG for now, can make dynamic
-                data: imageBuffer.toString('base64'),
-              },
-            },
-            {
-              type: 'text',
-              text: prompt,
-            },
-          ],
-        },
-      ],
-    };
+                // Analyze the attached image of a book page.
+                // OCR the text.
+                // Identify 5-10 vocabulary words suitable for a B1-level English learner (ignore common A1/A2 words).
+                // For each word, return a JSON object with:
+                // - word: The vocabulary word.
+                // - definition: A simple, clear definition fitting the context.
+                // - context: The exact sentence from the text where the word appears.
+                // - vn_translation: A simple Vietnamese translation for the word.
+                // - image_query: A short, descriptive 3-10 word search query that matches the context of the current book page.
+                // Return ONLY a JSON array.
 
     const command = new InvokeModelCommand({
-      modelId: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
-      contentType: 'application/json',
-      accept: 'application/json',
-      body: JSON.stringify(payload),
+      modelId: "global.anthropic.claude-sonnet-4-5-20250929-v1:0", // Updated modelId
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify({
+        anthropic_version: "bedrock-2023-05-31",
+        max_tokens: 2000,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: 'image/jpeg', // Assuming JPEG, using original media_type
+                  data: imageBuffer.toString('base64'), // Using imageBuffer
+                },
+              },
+              {
+                type: "text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      }),
     });
 
     try {
       const response = await this.client.send(command);
       const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-      const content = responseBody.content[0].text;
-      
-      // Extract JSON from the response (in case there's extra text)
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+      const text = responseBody.content[0].text;
+
+      // Extract JSON from the response (expecting an array)
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
       }
-      throw new Error('No JSON object found in response');
+
+      const vocabulary = JSON.parse(jsonMatch[0]);
+
+      // Validate structure with Zod
+      const VocabularySchema = z.array(z.object({
+        word: z.string(),
+        definition: z.string(),
+        context: z.string(),
+        vn_translation: z.string().optional(),
+        image_query: z.string().optional(),
+      }));
+
+      return {
+        pageIndex: "Page 1", // Placeholder, would need more complex logic to extract page number
+        vocabulary: VocabularySchema.parse(vocabulary),
+      };
     } catch (error) {
       this.logger.error('Error invoking Bedrock model', error);
       throw error;

@@ -5,12 +5,7 @@ import { useParams } from "next/navigation";
 import UploadZone from "../../components/UploadZone";
 import VocabularyCard from "../../components/VocabularyCard";
 import Link from "next/link";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-}
+import { cn } from "../../../lib/utils";
 import { ArrowLeft, ArrowRight, Book, Loader2, Search, X } from "lucide-react";
 
 // ... (interfaces)
@@ -144,6 +139,7 @@ export default function BookView() {
                                         word={vocab.word}
                                         definition={vocab.definition}
                                         context={vocab.contextSentence}
+                                        vnTranslation={vocab.vnTranslation}
                                         imageUrl={vocab.imageUrl}
                                         masteryLevel={vocab.masteryLevel}
                                     />

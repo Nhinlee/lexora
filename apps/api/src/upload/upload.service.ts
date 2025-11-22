@@ -71,8 +71,10 @@ export class UploadService {
           word: item.word,
           definition: item.definition,
           contextSentence: item.context,
-          imageSearchQuery: item.image_query,
+          vnTranslation: item.vn_translation,
+          imageQuery: item.image_query,
           imageUrl: imageUrl,
+          masteryLevel: 0,
         },
       });
       results.push(vocab);

@@ -28,7 +28,7 @@ Frontend: Next.js (React, App Router, Tailwind CSS).
 
 Backend: NestJS (Node.js, TypeScript).
 
-AI Integration: AWS Bedrock SDK (Model ID: anthropic.claude-3-sonnet-20240229-v1:0 or gemini-1.5-pro-001).
+AI Integration: AWS Bedrock SDK (Model ID: global.anthropic.claude-sonnet-4-5-20250929-v1:0).
 
 Search API: Serper API (Google Images).
 
