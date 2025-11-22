@@ -81,36 +81,63 @@ Return a JSON object with this exact structure:
     });
 
     try {
-      const response = await this.client.send(command);
-      const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-      const text = responseBody.content[0].text;
-
-      // Extract JSON from the response (expecting an array)
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) {
-        throw new Error("No JSON found in response");
-      }
-
-      const vocabulary = JSON.parse(jsonMatch[0]);
-
-      const pageIndex = vocabulary[0].page_index;
-
-      // Validate structure with Zod
-      const VocabularySchema = z.array(z.object({
-        word: z.string(),
-        definition: z.string(),
-        context: z.string(),
-        vn_translation: z.string().optional(),
-        image_query: z.string().optional(),
-      }));
-
-      return {
-        pageIndex,
-        vocabulary: VocabularySchema.parse(vocabulary),
-      };
+      return await this.invokeBedrockWithRetry(command);
     } catch (error) {
       this.logger.error('Error invoking Bedrock model', error);
       throw error;
+    }
+  }
+
+  private async invokeBedrockWithRetry(
+    command: InvokeModelCommand,
+    maxRetries = 5,
+    baseDelay = 1000,
+  ): Promise<any> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await this.client.send(command);
+        const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+        const text = responseBody.content[0].text;
+
+        // Extract JSON from the response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error("No JSON found in response");
+        }
+
+        const result = JSON.parse(jsonMatch[0]);
+        const pageIndex = result.page_index || 'Unknown Location';
+        const vocabulary = result.vocabulary || [];
+
+        // Validate structure with Zod
+        const VocabularySchema = z.array(z.object({
+          word: z.string(),
+          definition: z.string(),
+          context: z.string(),
+          vn_translation: z.string().optional(),
+          image_query: z.string().optional(),
+        }));
+
+        return {
+          pageIndex,
+          vocabulary: VocabularySchema.parse(vocabulary),
+        };
+      } catch (error) {
+        const isThrottling = error.name === 'ThrottlingException' || 
+                            error.$metadata?.httpStatusCode === 429;
+        
+        if (isThrottling && attempt < maxRetries) {
+          // Exponential backoff with jitter
+          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+          this.logger.warn(
+            `Bedrock rate limit hit. Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`,
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        throw error;
+      }
     }
   }
 }

@@ -17,10 +17,13 @@ interface UploadZoneProps {
 
 interface ImageUploadProgress {
     file: File;
-    status: 'pending' | 'processing' | 'complete' | 'error';
+    status: 'pending' | 'uploading' | 'processing' | 'complete' | 'error';
+    uploadProgress: number;  // 0-100
     error?: string;
     preview: string;
 }
+
+const CONCURRENT_UPLOADS = 2; // Max concurrent uploads (reduced to avoid Bedrock rate limits)
 
 export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps) {
     const [isDragging, setIsDragging] = useState(false);
@@ -66,43 +69,87 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
         const newQueue: ImageUploadProgress[] = validFiles.map(file => ({
             file,
             status: 'pending' as const,
+            uploadProgress: 0,
             preview: URL.createObjectURL(file),
         }));
 
         setUploadQueue(newQueue);
-        processQueue(newQueue);
+        processQueueParallel(newQueue);
     };
 
-    const processQueue = async (queue: ImageUploadProgress[]) => {
+    const uploadWithProgress = (
+        file: File,
+        index: number
+    ): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append("file", file);
+            if (bookId) {
+                formData.append("bookId", bookId);
+            }
+
+            // Track upload progress
+            xhr.upload.addEventListener("progress", (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    setUploadQueue(prev =>
+                        prev.map((q, i) =>
+                            i === index ? { ...q, uploadProgress: percentComplete, status: 'uploading' } : q
+                        )
+                    );
+                }
+            });
+
+            xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    // Upload complete, now processing
+                    setUploadQueue(prev =>
+                        prev.map((q, i) =>
+                            i === index ? { ...q, status: 'processing' } : q
+                        )
+                    );
+                    resolve(JSON.parse(xhr.responseText));
+                } else {
+                    reject(new Error("Upload failed"));
+                }
+            });
+
+            xhr.addEventListener("error", () => {
+                reject(new Error("Network error"));
+            });
+
+            xhr.open("POST", "http://localhost:3000/upload");
+            xhr.send(formData);
+        });
+    };
+
+    const processQueueParallel = async (queue: ImageUploadProgress[]) => {
         setIsProcessing(true);
 
-        for (let i = 0; i < queue.length; i++) {
-            const item = queue[i];
+        const uploadPromises = queue.map((item, index) =>
+            uploadWithProgress(item.file, index)
+                .then(() => {
+                    // Mark complete
+                    setUploadQueue(prev =>
+                        prev.map((q, i) =>
+                            i === index ? { ...q, status: 'complete' } : q
+                        )
+                    );
+                })
+                .catch((error) => {
+                    // Mark error
+                    setUploadQueue(prev =>
+                        prev.map((q, i) =>
+                            i === index ? { ...q, status: 'error', error: error.message } : q
+                        )
+                    );
+                })
+        );
 
-            // Update status to processing
-            setUploadQueue(prev =>
-                prev.map((q, idx) =>
-                    idx === i ? { ...q, status: 'processing' } : q
-                )
-            );
-
-            try {
-                await uploadSingleFile(item.file);
-
-                // Update status to complete
-                setUploadQueue(prev =>
-                    prev.map((q, idx) =>
-                        idx === i ? { ...q, status: 'complete' } : q
-                    )
-                );
-            } catch (error) {
-                // Update status to error
-                setUploadQueue(prev =>
-                    prev.map((q, idx) =>
-                        idx === i ? { ...q, status: 'error', error: 'Upload failed' } : q
-                    )
-                );
-            }
+        // Process with concurrency limit
+        for (let i = 0; i < uploadPromises.length; i += CONCURRENT_UPLOADS) {
+            await Promise.all(uploadPromises.slice(i, i + CONCURRENT_UPLOADS));
         }
 
         setIsProcessing(false);
@@ -111,28 +158,8 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
         if (onUploadComplete) {
             onUploadComplete();
         } else {
-            // Optionally refresh the page or redirect
             router.refresh();
         }
-    };
-
-    const uploadSingleFile = async (file: File): Promise<void> => {
-        const formData = new FormData();
-        formData.append("file", file);
-        if (bookId) {
-            formData.append("bookId", bookId);
-        }
-
-        const response = await fetch("http://localhost:3000/upload", {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) {
-            throw new Error("Upload failed");
-        }
-
-        return response.json();
     };
 
     const clearQueue = () => {
@@ -143,6 +170,7 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
 
     const getStatusIcon = (status: ImageUploadProgress['status']) => {
         switch (status) {
+            case 'uploading':
             case 'processing':
                 return <Loader2 className="w-4 h-4 animate-spin text-primary" />;
             case 'complete':
@@ -204,7 +232,7 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                         </h3>
                         <p className="text-muted-foreground max-w-xs mx-auto">
                             {isProcessing
-                                ? "AI is analyzing text and finding vocabulary..."
+                                ? "Processing in parallel for faster results..."
                                 : "Drag & drop or click to upload up to 10 photos"}
                         </p>
                     </div>
@@ -228,7 +256,7 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                         )}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {uploadQueue.map((item, idx) => (
                             <div
                                 key={idx}
@@ -238,34 +266,51 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                                 <img
                                     src={item.preview}
                                     alt={item.file.name}
-                                    className="w-12 h-12 object-cover rounded"
+                                    className="w-12 h-12 object-cover rounded flex-shrink-0"
                                 />
 
-                                {/* File Info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-foreground truncate">
-                                        {item.file.name}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                                    </p>
-                                </div>
-
-                                {/* Status */}
-                                <div className="flex items-center gap-2">
-                                    {getStatusIcon(item.status)}
-                                    <span className="text-xs text-muted-foreground capitalize">
-                                        {item.status === 'processing' ? 'Processing...' : item.status}
-                                    </span>
-                                </div>
-
-                                {/* Error Message */}
-                                {item.error && (
-                                    <div className="flex items-center space-x-2 text-destructive">
-                                        <AlertCircle className="w-4 h-4" />
-                                        <span className="text-xs">{item.error}</span>
+                                {/* File Info & Progress */}
+                                <div className="flex-1 min-w-0 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                            {item.file.name}
+                                        </p>
+                                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                            {getStatusIcon(item.status)}
+                                            <span className="text-xs text-muted-foreground capitalize">
+                                                {item.status === 'uploading'
+                                                    ? `${item.uploadProgress}%`
+                                                    : item.status === 'processing'
+                                                        ? 'Analyzing...'
+                                                        : item.status}
+                                            </span>
+                                        </div>
                                     </div>
-                                )}
+
+                                    {/* Progress Bar */}
+                                    {(item.status === 'uploading' || item.status === 'processing') && (
+                                        <div className="w-full">
+                                            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                                {item.status === 'uploading' ? (
+                                                    <div
+                                                        className="h-full bg-primary transition-all duration-300"
+                                                        style={{ width: `${item.uploadProgress}%` }}
+                                                    />
+                                                ) : (
+                                                    <div className="h-full bg-primary animate-pulse w-full" />
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Error Message */}
+                                    {item.error && (
+                                        <div className="flex items-center space-x-2 text-destructive">
+                                            <AlertCircle className="w-3 h-3" />
+                                            <span className="text-xs">{item.error}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
