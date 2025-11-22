@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Master English vocabulary with AI-powered book reading.",
 };
 
+import Sidebar from "./components/Sidebar";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +24,10 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} antialiased bg-slate-950 text-slate-50`}
       >
-        {children}
+        <Sidebar />
+        <main className="pl-64 min-h-screen">
+          {children}
+        </main>
       </body>
     </html>
   );

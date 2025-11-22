@@ -5,6 +5,28 @@ import { PrismaService } from '../prisma/prisma.service';
 export class BooksService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getBooks() {
+    return this.prisma.book.findMany({
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      include: {
+        _count: {
+          select: { pages: true },
+        },
+      },
+    });
+  }
+
+  async createBook(title: string, author: string) {
+    return this.prisma.book.create({
+      data: {
+        title,
+        author,
+      },
+    });
+  }
+
   async getBook(id: string, query?: string) {
     const book = await this.prisma.book.findUnique({
       where: { id },

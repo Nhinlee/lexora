@@ -3,6 +3,7 @@ import {
   Post,
   UseInterceptors,
   UploadedFile,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
@@ -13,7 +14,10 @@ export class UploadController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    return this.uploadService.processPage(file);
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('bookId') bookId?: string,
+  ) {
+    return this.uploadService.processPage(file, bookId);
   }
 }

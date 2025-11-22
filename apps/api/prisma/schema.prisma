@@ -11,8 +11,9 @@ model Book {
   id          String      @id @default(uuid())
   title       String
   author      String
-  coverImage  String?
+  coverUrl    String?
   createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   pages       PageEntry[]
 }
 

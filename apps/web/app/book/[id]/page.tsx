@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import UploadZone from "../../components/UploadZone";
 import VocabularyCard from "../../components/VocabularyCard";
 import { ArrowLeft, Book, Loader2, Search } from "lucide-react";
 import Link from "next/link";
@@ -31,21 +32,21 @@ export default function BookView() {
     const [book, setBook] = useState<BookData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchBook = async () => {
-            try {
-                // In a real app, use React Query
-                const res = await fetch(`http://localhost:3000/books/${params.id}`);
-                if (!res.ok) throw new Error("Failed to fetch book");
-                const data = await res.json();
-                setBook(data);
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchBook = async () => {
+        try {
+            // In a real app, use React Query
+            const res = await fetch(`http://localhost:3000/books/${params.id}`);
+            if (!res.ok) throw new Error("Failed to fetch book");
+            const data = await res.json();
+            setBook(data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         if (params.id) {
             fetchBook();
         }
@@ -72,14 +73,6 @@ export default function BookView() {
             <div className="max-w-6xl mx-auto space-y-8">
                 {/* Header */}
                 <header className="flex items-center justify-between">
-                    <Link
-                        href="/"
-                        className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Upload</span>
-                    </Link>
-
                     <div className="flex items-center space-x-4">
                         <div className="p-3 bg-indigo-500/10 rounded-full">
                             <Book className="w-6 h-6 text-indigo-400" />
@@ -90,8 +83,18 @@ export default function BookView() {
                         </div>
                     </div>
 
-                    <div className="w-24" /> {/* Spacer for alignment */}
+                    {/* Upload Trigger (could be a modal, but for now inline or simple) */}
+                    {/* We'll put the upload zone in a collapsible or separate section, 
+                        but for simplicity let's put it at the top or bottom. 
+                        Actually, let's make it a small button that opens a modal or just a compact zone.
+                        Let's use a compact UploadZone here.
+                    */}
                 </header>
+
+                <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-6">
+                    <h3 className="text-sm font-medium text-slate-400 mb-4 uppercase tracking-wider">Add New Page</h3>
+                    <UploadZone bookId={book.id} onUploadComplete={fetchBook} />
+                </div>
 
                 {/* Search & Filter */}
                 <div className="sticky top-4 z-20">

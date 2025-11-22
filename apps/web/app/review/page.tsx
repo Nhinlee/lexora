@@ -67,23 +67,13 @@ export default function ReviewView() {
 
     return (
         <div className="min-h-screen bg-slate-950 p-8 flex flex-col">
-            <header className="flex items-center justify-between max-w-4xl mx-auto w-full mb-12">
-                <Link
-                    href="/"
-                    className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Back Home</span>
-                </Link>
-
+            <header className="flex items-center justify-center max-w-4xl mx-auto w-full mb-12">
                 <div className="flex items-center space-x-2">
                     <Layers className="w-5 h-5 text-indigo-400" />
                     <span className="text-white font-medium">
                         Card {currentIndex + 1} / {vocabulary.length}
                     </span>
                 </div>
-
-                <div className="w-24" />
             </header>
 
             <main className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full space-y-8">

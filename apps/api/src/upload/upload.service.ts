@@ -13,22 +13,30 @@ export class UploadService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async processPage(file: Express.Multer.File) {
-    this.logger.log(`Processing file: ${file.originalname}`);
+  async processPage(file: Express.Multer.File, bookId?: string) {
+    this.logger.log(`Processing file: ${file.originalname} for book: ${bookId}`);
 
-    // 1. Create or get a default book (for MVP)
-    // In a real app, bookId would be passed in
-    let book = await this.prisma.book.findFirst({
-      where: { title: 'Demo Book' },
-    });
+    let book;
 
-    if (!book) {
-      book = await this.prisma.book.create({
-        data: {
-          title: 'Demo Book',
-          author: 'Unknown Author',
-        },
+    if (bookId) {
+      book = await this.prisma.book.findUnique({ where: { id: bookId } });
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+    } else {
+      // Fallback to Demo Book for backward compatibility
+      book = await this.prisma.book.findFirst({
+        where: { title: 'Demo Book' },
       });
+
+      if (!book) {
+        book = await this.prisma.book.create({
+          data: {
+            title: 'Demo Book',
+            author: 'Unknown Author',
+          },
+        });
+      }
     }
 
     // 3. AI Extraction

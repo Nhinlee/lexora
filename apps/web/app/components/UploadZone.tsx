@@ -10,7 +10,12 @@ function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs));
 }
 
-export default function UploadZone() {
+interface UploadZoneProps {
+    bookId?: string;
+    onUploadComplete?: () => void;
+}
+
+export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -33,13 +38,13 @@ export default function UploadZone() {
         if (files.length > 0) {
             uploadFile(files[0]);
         }
-    }, []);
+    }, [bookId, onUploadComplete]);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             uploadFile(e.target.files[0]);
         }
-    }, []);
+    }, [bookId, onUploadComplete]);
 
     const uploadFile = async (file: File) => {
         if (!file.type.startsWith("image/")) {
@@ -52,6 +57,9 @@ export default function UploadZone() {
 
         const formData = new FormData();
         formData.append("file", file);
+        if (bookId) {
+            formData.append("bookId", bookId);
+        }
 
         try {
             const response = await fetch("http://localhost:3000/upload", {
@@ -69,7 +77,9 @@ export default function UploadZone() {
             console.log("Upload success:", data);
             // Assuming the backend returns { pageEntry: { bookId: ... } }
             // We might want to redirect to /book/[id]
-            if (data.pageEntry && data.pageEntry.bookId) {
+            if (onUploadComplete) {
+                onUploadComplete();
+            } else if (data.pageEntry && data.pageEntry.bookId) {
                 router.push(`/book/${data.pageEntry.bookId}`);
             }
 
