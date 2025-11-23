@@ -21,35 +21,28 @@ export class AiService {
   }
 
   async extractVocabulary(imageBuffer: Buffer): Promise<any> {
-    const prompt = `Analyze the attached image of a book page.
-OCR the text.
-1. Identify the "page index" or location indicator. This often includes "time left" (e.g., "42 hrs 40 mins left in book") AND/OR a percentage (e.g., "15%"). Capture BOTH if present, separated by " | " (e.g., "42 hrs 40 mins left in book | 15%"). If only one is found, return that. If neither, use "Unknown Location".
-2. Identify 5-10 vocabulary words suitable for a >= B1 level English learner (ignore common A1/A2 words).
+    const prompt = `
+Analyze the attached image of a book page. OCR the text.
 
-Return a JSON object with this exact structure:
+IMPORTANT TASKS:
+1. **Find the page location**: Look for progress indicators like "42 hrs 40 mins left in book", "15%", "Page 123", or "Loc 2431". If you find multiple indicators, combine them with " | ". If none found, use "Unknown Location".
+2. **Extract vocabulary**: Identify 5-10 words at B1+ level (intermediate/advanced English).
+
+Return ONLY a valid JSON object with this EXACT structure (no extra text):
 {
-  "page_index": "The extracted location string",
+  "page_index": "42 hrs 40 mins left in book | 15%",
   "vocabulary": [
     {
-      "word": "The vocabulary word",
-      "definition": "A simple, clear definition fitting the context",
-      "context": "The exact sentence from the text where the word appears",
-      "image_query": "A short, descriptive 3-10 word search query that matches the context of the current book page"
-      "vn_translation": "A simple Vietnamese translation for the word",
+      "word": "example",
+      "definition": "a thing characteristic of its kind",
+      "context": "This is an example sentence from the book.",
+      "vn_translation": "ví dụ",
+      "image_query": "A short, descriptive 5-10 word search query that support to easy understand the word & related to the context"
     }
   ]
-}`;
+}
 
-                // Analyze the attached image of a book page.
-                // OCR the text.
-                // Identify 5-10 vocabulary words suitable for a B1-level English learner (ignore common A1/A2 words).
-                // For each word, return a JSON object with:
-                // - word: The vocabulary word.
-                // - definition: A simple, clear definition fitting the context.
-                // - context: The exact sentence from the text where the word appears.
-                // - vn_translation: A simple Vietnamese translation for the word.
-                // - image_query: A short, descriptive 3-10 word search query that matches the context of the current book page.
-                // Return ONLY a JSON array.
+CRITICAL: The "page_index" field MUST be at the root level of the JSON object, NOT inside the vocabulary array.`;
 
     const command = new InvokeModelCommand({
       modelId: "global.anthropic.claude-sonnet-4-5-20250929-v1:0", // Updated modelId
@@ -81,7 +74,8 @@ Return a JSON object with this exact structure:
     });
 
     try {
-      return await this.invokeBedrockWithRetry(command);
+      const result = await this.invokeBedrockWithRetry(command);
+      return result;
     } catch (error) {
       this.logger.error('Error invoking Bedrock model', error);
       throw error;
@@ -99,13 +93,21 @@ Return a JSON object with this exact structure:
         const responseBody = JSON.parse(new TextDecoder().decode(response.body));
         const text = responseBody.content[0].text;
 
+        this.logger.debug(`AI Response: ${text}`);
+
         // Extract JSON from the response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error("No JSON found in response");
         }
 
+        this.logger.debug(`Extracted JSON: ${jsonMatch[0]}`);
+
         const result = JSON.parse(jsonMatch[0]);
+        
+        this.logger.debug(`Parsed result.page_index: ${result.page_index}`);
+        this.logger.debug(`Parsed result.vocabulary length: ${result.vocabulary?.length || 0}`);
+        
         const pageIndex = result.page_index || 'Unknown Location';
         const vocabulary = result.vocabulary || [];
 
@@ -119,7 +121,7 @@ Return a JSON object with this exact structure:
         }));
 
         return {
-          pageIndex,
+          pageIndex: pageIndex,
           vocabulary: VocabularySchema.parse(vocabulary),
         };
       } catch (error) {

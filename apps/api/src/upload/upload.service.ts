@@ -41,7 +41,7 @@ export class UploadService {
 
     // 3. AI Extraction
     const aiResult = await this.aiService.extractVocabulary(file.buffer);
-    const pageIndex = aiResult.page_index || 'Unknown Location';
+    const pageIndex = aiResult.pageIndex || 'Unknown Location';
     const vocabularyData = aiResult.vocabulary || [];
 
     this.logger.log(`Extracted location: ${pageIndex}, words: ${vocabularyData.length}`);
