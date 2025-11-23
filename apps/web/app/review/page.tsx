@@ -22,7 +22,7 @@ export default function ReviewView() {
     useEffect(() => {
         const fetchVocabulary = async () => {
             try {
-                const res = await fetch("http://localhost:3000/vocabulary");
+                const res = await fetch("/api/vocabulary");
                 if (!res.ok) throw new Error("Failed to fetch vocabulary");
                 const data = await res.json();
                 setVocabulary(data);

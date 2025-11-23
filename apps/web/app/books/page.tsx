@@ -22,7 +22,7 @@ export default function BooksPage() {
 
     const fetchBooks = async () => {
         try {
-            const res = await fetch("http://localhost:3000/books");
+            const res = await fetch("/api/books");
             if (!res.ok) throw new Error("Failed to fetch books");
             const data = await res.json();
             setBooks(data);
@@ -42,7 +42,7 @@ export default function BooksPage() {
         if (!newBookTitle || !newBookAuthor) return;
 
         try {
-            const res = await fetch("http://localhost:3000/books", {
+            const res = await fetch("/api/books", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title: newBookTitle, author: newBookAuthor }),

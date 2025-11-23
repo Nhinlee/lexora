@@ -119,7 +119,7 @@ export default function UploadZone({ bookId, onUploadComplete }: UploadZoneProps
                 reject(new Error("Network error"));
             });
 
-            xhr.open("POST", "http://localhost:3000/upload");
+            xhr.open("POST", "/api/upload");
             xhr.send(formData);
         });
     };

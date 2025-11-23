@@ -8,7 +8,28 @@ import Link from "next/link";
 import { cn } from "../../../lib/utils";
 import { ArrowLeft, ArrowRight, Book, Loader2, Search, X } from "lucide-react";
 
-// ... (interfaces)
+interface VocabularyData {
+    id: string;
+    word: string;
+    definition: string;
+    contextSentence: string;
+    vnTranslation?: string;
+    imageUrl?: string;
+    masteryLevel: number;
+}
+
+interface PageData {
+    id: string;
+    pageNumber: string;
+    vocabulary: VocabularyData[];
+}
+
+interface BookData {
+    id: string;
+    title: string;
+    author: string;
+    pages: PageData[];
+}
 
 export default function BookView() {
     const params = useParams();
@@ -19,7 +40,7 @@ export default function BookView() {
     const fetchBook = async () => {
         try {
             // In a real app, use React Query
-            const res = await fetch(`http://localhost:3000/books/${params.id}`);
+            const res = await fetch(`/api/books/${params.id}`);
             if (!res.ok) throw new Error("Failed to fetch book");
             const data = await res.json();
             setBook(data);
