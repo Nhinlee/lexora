@@ -1,125 +1,53 @@
-# AWS Lightsail Deployment Guide (CLI Edition)
+# Walkthrough - Docker Fixes & API Proxy
 
-This guide provides a complete, step-by-step workflow to deploy the **Lexora** stack (Postgres DB, NestJS API, Next.js Web) using **AWS CLI**.
+## Issues Resolved
 
-## Prerequisites
-- AWS CLI installed and configured (`aws configure`).
-- Lightsail Control Plugin installed (for `push-container-image`).
-- Docker running.
+1.  **Platform Mismatch**: Added `platform: linux/arm64` to `docker-compose.yml` to support Apple Silicon.
+2.  **API Port Mismatch**: The NestJS API was listening on port 3000 (default), but `docker-compose` and `API_URL` expected port 8080. Added `PORT=8080` to the `api` service environment.
+3.  **Database Migrations**: The database was empty, causing 500 errors. Ran `npx prisma migrate deploy` to create tables.
+4.  **405 Method Not Allowed**: Next.js `standalone` mode baked in the build-time `API_URL` (which was undefined/defaulting to localhost:3000) into `next.config.js`. Replaced `next.config.ts` rewrites with `middleware.ts` to ensure `API_URL` is resolved at runtime.
 
----
+## Verification Results
 
-## Phase 1: Create the Database (Postgres)
-
-First, we create a managed Postgres database to ensure data persistence.
-
+### 1. Container Status
+All containers are up and running:
 ```bash
-# 1. Create the database (Cost: ~$15/mo for Micro)
-aws lightsail create-relational-database \
-    --relational-database-name lexora-db \
-    --relational-database-blueprint-id postgres_18 \
-    --relational-database-bundle-id micro_2_0 \
-    --master-database-name lexora \
-    --master-username dbadmin
-
-# 2. Wait for it to be 'available' (this takes a few minutes)
-aws lightsail get-relational-database --relational-database-name lexora-db
-
-# 3. Get the connection details (Host, Port, Password)
-aws lightsail get-relational-database-master-user-password \
-    --relational-database-name lexora-db
+docker-compose ps
 ```
 
-> **Note**: Construct your `DATABASE_URL` using the output:
-> `postgresql://dbadmin:<PASSWORD>@<HOST>:5432/lexora?schema=public&sslmode=require`
-
----
-
-## Phase 2: Deploy the API Service
-
-We deploy the API first because the Web app needs the API's URL.
-
+### 2. API Connectivity
+Verified that the Web container can reach the API container:
 ```bash
-# 1. Create the Container Service (Cost: ~$7-10/mo)
-aws lightsail create-container-service \
-    --service-name lexora-api \
-    --power small \
-    --scale 1
-
-# 2. Build and Push the Docker Image (Targeting linux/amd64)
-# IMPORTANT: We must build for linux/amd64 for AWS Lightsail, even if you are on a Mac (M1/M2).
-docker build --platform linux/amd64 -t lexora-api ./apps/api
-aws lightsail push-container-image \
-    --service-name lexora-api \
-    --label api \
-    --image lexora-api
-
-# 3. Create the Deployment (Replace placeholders!)
-# Note: You must replace <IMAGE_NAME> with the full image string returned from the push command (e.g., :lexora-api.api.1)
-aws lightsail create-container-service-deployment \
-    --service-name lexora-api \
-    --containers '{
-        "api": {
-            "image": "lexora-api.api.1",
-            "ports": {"3000": "HTTP"},
-            "environment": {
-                "DATABASE_URL": "...",
-                "AWS_ACCESS_KEY_ID": "...",
-                "AWS_SECRET_ACCESS_KEY": "...",
-                "AWS_REGION": "...",
-                "SERPER_API_KEY": "..."
-            }
-        }
-    }' \
-    --public-endpoint '{"containerName": "api", "containerPort": 3000, "healthCheck": {"path": "/"}}'
+docker exec lexora-web-1 wget -qO- http://api:8080/books
+# Output: [] (or list of books)
 ```
 
-**Wait** until the service state is `RUNNING`. Then get the public URL:
+### 3. Proxy Functionality
+Verified that `http://localhost:3001/api/books` correctly proxies to the backend API:
+
+**POST Request:**
 ```bash
-aws lightsail get-container-services --service-name lexora-api
-# Copy the 'url' field from the output (e.g., https://lexora-api...lightsail.com)
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Walkthrough Book", "author":"Test"}' http://localhost:3001/api/books
+```
+**Response:**
+```json
+{"id":"...","title":"Walkthrough Book","author":"Test",...}
 ```
 
----
-
-## Phase 3: Deploy the Web Service
-
-Now we deploy the Web app, pointing it to the API.
-
+**GET Request:**
 ```bash
-# 1. Create the Container Service (Cost: ~$7-10/mo)
-aws lightsail create-container-service \
-    --service-name lexora-web \
-    --power small \
-    --scale 1
-
-# 2. Build and Push the Docker Image (Targeting linux/amd64)
-docker build --platform linux/amd64 -t lexora-web ./apps/web
-aws lightsail push-container-image \
-    --service-name lexora-web \
-    --label web \
-    --image lexora-web
-
-# 3. Create the Deployment
-# Replace <API_PUBLIC_URL> with the URL from Phase 2
-aws lightsail create-container-service-deployment \
-    --service-name lexora-web \
-    --containers '{
-        "web": {
-            "image": "<YOUR_PUSHED_IMAGE_NAME>",
-            "ports": {"3000": "HTTP"},
-            "environment": {
-                "API_URL": "<API_PUBLIC_URL>"
-            }
-        }
-    }' \
-    --public-endpoint '{"containerName": "web", "containerPort": 3000, "healthCheck": {"path": "/"}}'
+curl http://localhost:3001/api/books
+```
+**Response:**
+```json
+[{"id":"...","title":"Walkthrough Book",...}]
 ```
 
----
+## Changes Made
 
-## Verification
+-   Modified `docker-compose.yml`
+-   Modified `apps/web/next.config.ts` (removed rewrites)
+-   Created `apps/web/middleware.ts` (added dynamic rewrites)
+-   Ran database migrations manually.
 
-1.  Visit the **Web Service URL**.
-2.  Try to upload a book page.
-3.  If it works, the Web app is successfully talking to the API, which is talking to the Database!
+The application is now fully functional locally with Docker Compose.
